@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+  	<ExcludeGeneratedDebugSymbol>false</ExcludeGeneratedDebugSymbol>
+    <Env Condition="'$(Env)'==''">CI</Env>
+    <DesktopBuildPackageLocation>..\Package\$(Env)\$(AssemblyName).zip</DesktopBuildPackageLocation>
+    <ProjectConfigTransformFileName Condition="'$(Env)'!=''">Web.$(Env).config</ProjectConfigTransformFileName>
+    <MvcBuildViews Condition="'$(MvcBuildViews)'=='' and '$(Configuration)' == 'Release'">true</MvcBuildViews>
+  </PropertyGroup>
+  <Target Name="CheckParameters" BeforeTargets="PackageUsingManifest">
+   <Error Text="DeployIisAppPath must be set." Condition="'$(DeployIisAppPath)' == ''" />
+  </Target>
+  <Target Name="CleanPackage" DependsOnTargets="PreTransformWebConfig">
+    <Message Text="Running Clean Package Target" />
+    <Delete Files="$(_WebConfigTransformOutput)" />
+  </Target>
+  <Target Name="CleanWebDeploy" BeforeTargets="MvcBuildViews" Condition="'$(MvcBuildViews)'=='true'">
+    <Message Text="Running Clean Web Deploy Target" />
+    <CallTarget Targets="CleanWebsitesPackage" />
+	<CallTarget Targets="CleanWebsitesPackageTempDir" Condition="'$(VisualStudioVersion)'=='10.0'" />
+	<CallTarget Targets="CleanWebsitesTransformParametersFiles" Condition="'$(VisualStudioVersion)'=='10.0'" />
+	<CallTarget Targets="CleanWebsitesWPPAllFilesInSingleFolder" Condition="'$(VisualStudioVersion)'!='10.0'" />
+	<CallTarget Targets="CleanWebPublishPipelineIntermediateOutput" Condition="'$(VisualStudioVersion)'!='10.0'" />
+  </Target>
+  <Target Name="MvcBuildViews" AfterTargets="AfterBuild" Condition="'$(MvcBuildViews)'=='true'">
+    <Message Text="Running MVC Build Views Target" />
+    <AspNetCompiler VirtualPath="temp" PhysicalPath="$(WebProjectOutputDir)" />
+  </Target>
+</Project>

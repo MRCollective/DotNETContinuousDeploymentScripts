@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectName Condition="'$(ProjectName)'==''">$(Name.Replace(".Cloud", ""))</ProjectName>
+    <ProjectOutput Condition="'$(ProjectOutput)'==''">$(ProjectName).dll</ProjectOutput>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(ProjectDir)ServiceConfiguration.prod.cscfg')">
+    <EnvironmentConfiguration Include="ServiceConfiguration.prod.cscfg">
+      <BaseConfiguration>ServiceConfiguration.cscfg</BaseConfiguration>
+    </EnvironmentConfiguration>
+    <None Include="ServiceConfiguration.prod.cscfg" Condition="Exists('$(ProjectDir)ServiceConfiguration.prod.cscfg')">
+      <DependentUpon>ServiceConfiguration.cscfg</DependentUpon>
+    </None>
+    <EnvironmentDefinition Include="ServiceDefinition.prod.csdef" Condition="Exists('$(ProjectDir)ServiceDefinition.prod.csdef')">
+      <BaseConfiguration>ServiceDefinition.csdef</BaseConfiguration>
+    </EnvironmentDefinition>
+    <None Include="ServiceDefinition.prod.csdef" Condition="Exists('$(ProjectDir)ServiceDefinition.prod.csdef')">
+      <DependentUpon>ServiceDefinition.csdef</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(ProjectDir)ServiceConfiguration.test.cscfg')">
+    <EnvironmentConfiguration Include="ServiceConfiguration.test.cscfg" Condition="Exists('$(ProjectDir)ServiceDefinition.test.csdef')">
+      <BaseConfiguration>ServiceConfiguration.cscfg</BaseConfiguration>
+    </EnvironmentConfiguration>
+    <None Include="ServiceConfiguration.test.cscfg" Condition="Exists('$(ProjectDir)ServiceDefinition.test.csdef')">
+      <DependentUpon>ServiceConfiguration.cscfg</DependentUpon>
+    </None>
+    <EnvironmentDefinition Include="ServiceDefinition.test.csdef" Condition="Exists('$(ProjectDir)ServiceDefinition.test.csdef')">
+      <BaseConfiguration>ServiceDefinition.csdef</BaseConfiguration>
+    </EnvironmentDefinition>
+    <None Include="ServiceDefinition.test.csdef" Condition="Exists('$(ProjectDir)ServiceDefinition.test.csdef')">
+      <DependentUpon>ServiceDefinition.csdef</DependentUpon>
+    </None>
+  </ItemGroup>
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" />
+  <Target Name="ValidateServiceFiles" Inputs="@(EnvironmentConfiguration);ServiceConfiguration.cscfg;@(EnvironmentDefinition);ServiceDefinition.csdef)" Outputs="@(EnvironmentConfiguration->'%(Identity).transformed.cscfg');@(EnvironmentDefinition->'%(Identity).transformed.csdef')" Condition="$(Env)!=''">
+    <Message Text="ValidateServiceFiles: Transforming ServiceConfiguration.cscfg to %(EnvironmentConfiguration.Identity).tmp via %(EnvironmentConfiguration.Identity)" />
+    <TransformXml Source="ServiceConfiguration.cscfg" Transform="%(EnvironmentConfiguration.Identity)" Destination="%(EnvironmentConfiguration.Identity).tmp" />
+    <Message Text="ValidateServiceFiles: Transforming ServiceDefinition.csdef to %(EnvironmentDefinition.Identity).tmp via %(EnvironmentDefinition.Identity)" />
+    <TransformXml Source="ServiceDefinition.csdef" Transform="%(EnvironmentDefinition.Identity)" Destination="%(EnvironmentDefinition.Identity).tmp" />
+    <Message Text="ValidateServiceFiles: Transformation complete; starting validation" />
+    <ValidateServiceFiles ServiceDefinitionFile="ServiceDefinition.$(Env).csdef.tmp" ServiceConfigurationFile="ServiceConfiguration.$(Env).cscfg.tmp" />
+    <Message Text="ValidateServiceFiles: Validation complete; renaming temporary file" />
+    <Move SourceFiles="%(EnvironmentConfiguration.Identity).tmp" DestinationFiles="%(EnvironmentConfiguration.Identity).transformed.cscfg" />
+    <Move SourceFiles="%(EnvironmentDefinition.Identity).tmp" DestinationFiles="%(EnvironmentDefinition.Identity).transformed.csdef" />
+  </Target>
+  <Target Name="CopyTransformedEnvironmentConfiguration" BeforeTargets="AfterPackageComputeService" Condition="$(Env)!=''">
+    <Message Text="CopyTransformedEnvironmentConfiguration: Using ServiceConfiguration.$(Env).cscfg.transformed.cscfg and ServiceDefinition.$(Env).csdef.transformed.csdef" />
+    <Copy SourceFiles="ServiceConfiguration.$(Env).cscfg.transformed.cscfg" DestinationFiles="$(OutDir)ServiceConfiguration.cscfg" />
+    <Copy SourceFiles="ServiceDefinition.$(Env).csdef.transformed.csdef" DestinationFiles="$(OutDir)ServiceDefinition.csdef" />
+  </Target>
+  <Target Name="CopySpecialFilesIntoPackage" AfterTargets="CopyWorkerRoleFiles">
+    <TransformXml Source="$(ProjectDir)..\$(ProjectName)\App.config" Transform="$(ProjectDir)..\$(ProjectName)\App.$(Env).config" Destination="$(ProjectDir)obj\$(Configuration)\$(ProjectName)\$(ProjectOutput).config" Condition="$(Env)!='' and Exists('$(ProjectDir)..\$(ProjectName)\App.$(Env).config') and Exists('$(ProjectDir)obj\$(Configuration)\$(ProjectName)\$(ProjectOutput).config')" />
+  </Target>
+</Project>

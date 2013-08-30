@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" />
+  <Target Name="AddExtraFiles" AfterTargets="Build">
+    <TransformXml Source="$(ProjectDir)..\$(AssemblyName)\App.config" Transform="$(ProjectDir)..\$(AssemblyName)\App.$(Env).config" Destination="$(OutDir)$(AssemblyName).exe.config" Condition="$(Env)!='' and Exists('$(ProjectDir)..\$(AssemblyName)\App.$(Env).config')" />
+  </Target>
+</Project>
